@@ -1,6 +1,18 @@
+const fs = require('fs');
+const https = require('https');
 const WebSocket = require('ws');
 
-const wss = new WebSocket.Server({ port: 8090 });
+const options = {
+  key: fs.readFileSync('./ssl/yourkey.pem'),
+  cert: fs.readFileSync('./ssl/yourcert.pem')
+};
+
+const httpsServer = https.createServer(options, (req, res) => {
+  res.writeHead(200);
+  res.end('hello world\n');
+}).listen(8090);
+
+const wss = new WebSocket.Server({server: httpsServer});
 
 wss.on('connection', function connection(ws) {
   ws.on('message', function incoming(message) {

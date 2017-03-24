@@ -1,38 +1,53 @@
+'use strict';
+
+const fs = require('fs');
 const WebSocket = require('ws');
 
-//const ws = new WebSocket('ws://192.168.122.162:8090/');
-const ws = new WebSocket('ws://localhost:8090/');
-
-var mysql      = require('mysql');
-var connection = mysql.createConnection({
-  host     : '192.168.122.174',
-  user     : 'root',
-  password : 'gama.net',
-  database : 'egaming'
+const ws = new WebSocket('wss://localhost:8070/', {
+  key: fs.readFileSync('./ssl/yourkey.pem'),
+  cert: fs.readFileSync('./ssl/yourcert.pem'),
+  rejectUnauthorized: false
 });
 
-//connection.connect();
+const readline = require('readline');
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
 ws.on('open', function open() {
-  
-  //ws.send('whitefur from client');
-  //setInterval(() => {
-  //  ws.send('what a fucking job!!!! damn it!!!', err => {
-  //    console.log('err');
-  //    console.log(err);
-  //  });
-  //}, 1000);
-  connection.query('SELECT Picture FROM Member WHERE Picture IS NOT NULL LIMIT 1', function (error, results, fields) {
-    if (error) throw error;
-    var pic = results[0]['Picture'];
-    var string = pic.toString('hex');
-    setInterval(() => {
-      ws.send(string);
-      console.log('send hex');
-    }, 3000);
-    connection.end();
+  console.log('1: cardIn, 2: billIn, 3: billStacked \n')
+  rl.on('line', line => {
+    let obj;
+    switch(parseInt(line)){
+      case 1:
+        obj = {event: 'cardIn', "serial": "A100180758"};
+        break;
+      case 2:
+        obj = {event: 'billIn', "amount": 50};
+        break;
+      case 3:
+        obj = {event: 'billStacked'};
+        break;
+      default:
+        break;
+    }
+
+
+    let str = JSON.stringify(obj);
+    console.log(`json str: ${str}`);
+    ws.send(str, err => {
+      if(err){
+        console.dir(`Error: ${err}`);
+      }
+    });
+    console.log('1: cardIn, 2: billIn, 3: billStacked \n')
   });
 });
+
+
+
 
 
 ws.on('message', function incoming(data, flags) {
